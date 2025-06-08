@@ -42,7 +42,7 @@ const PlaylistItem = ({ playlist, onPress }) => {
       </View>
       <Ionicons 
         name="chevron-forward" 
-        size={20} 
+        size={25} 
         color={theme.subtext} 
       />
     </TouchableOpacity>

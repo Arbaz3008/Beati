@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { useDispatch } from 'react-redux';
 import { playSongAsync } from '../redux/audioThunks';
-const SongItem = ({ song, isCurrent, }) => {
+const SongItem = ({ song, isCurrent,onPress }) => {
   const { theme } = useTheme();
   const dispatch = useDispatch();
 
@@ -16,7 +16,6 @@ const SongItem = ({ song, isCurrent, }) => {
   };
 
 const handlePress = () => {
-  // Agar already yeh song play ho raha hai, dobara play mat karo!
   if (isCurrent) return;
   dispatch(playSongAsync(song));
 };
@@ -25,8 +24,10 @@ const handlePress = () => {
 
 
   return (
-    <TouchableOpacity
-      onPress= {handlePress}
+
+          <TouchableOpacity
+     onPress={onPress}
+
       style={[
         styles.container,
         { backgroundColor: isCurrent ? theme.highlightBackground : theme.background },

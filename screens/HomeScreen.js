@@ -1,13 +1,12 @@
-import React, { useEffect, useState, useRef,useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { setCurrentSong } from '../redux/audioSlice';
+import { setCurrentSong, hideSong, playSongFromQueue } from '../redux/audioSlice';
 import { loadAudioFilesFromDevice } from '../redux/audioThunks';
 import SongItem from '../components/SongItem';
 import MusicControls from '../components/MusicControls';
 import { useTheme } from '../theme/ThemeContext';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { hideSong,playSongFromQueue } from '../redux/audioSlice';
 
 const sortingOptions = [
   { label: 'Name (A-Z)', value: 'name_asc' },
@@ -19,81 +18,123 @@ const sortingOptions = [
 const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { songs, hiddenSongs, currentSong } = useSelector(state => state.audio);
-const visibleSongs = useMemo(() => 
-  songs.filter(song => !hiddenSongs.some(h => h.id === song.id)),
-  [songs, hiddenSongs]
-);
-
   const { theme } = useTheme();
-  const [showSortOptions, setShowSortOptions] = useState(false);
+ const [showSortOptions, setShowSortOptions] = useState(false);
   const [sortType, setSortType] = useState('name_asc');
-  const [sortedSongs, setSortedSongs] = useState([]);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedSongs, setSelectedSongs] = useState([]);
   const pressTimers = useRef({});
 
-  useEffect(() => {
-    let sorted = [...visibleSongs];
-    if (sortType === 'name_asc') sorted.sort((a, b) => a.title.localeCompare(b.title));
-    if (sortType === 'name_desc') sorted.sort((a, b) => b.title.localeCompare(a.title));
-    if (sortType === 'newest') sorted.sort((a, b) => b.id.localeCompare(a.id));
-    if (sortType === 'oldest') sorted.sort((a, b) => a.id.localeCompare(b.id));
-    setSortedSongs(sorted);
+  const visibleSongs = useMemo(() =>
+    songs.filter(song => !hiddenSongs.some(h => h.id === song.id)),
+    [songs, hiddenSongs]
+  );
+
+  const sortedSongs = useMemo(() => {
+    const sorted = [...visibleSongs];
+    switch (sortType) {
+      case 'name_asc':
+        sorted.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'name_desc':
+        sorted.sort((a, b) => b.title.localeCompare(a.title));
+        break;
+      case 'newest':
+        sorted.sort((a, b) => b.id.localeCompare(a.id));
+        break;
+      case 'oldest':
+        sorted.sort((a, b) => a.id.localeCompare(b.id));
+        break;
+    }
+    return sorted;
   }, [visibleSongs, sortType]);
-  
+
  
 
   useEffect(() => {
     dispatch(loadAudioFilesFromDevice());
     return () => {
-      // Clean up all timers when component unmounts
       Object.values(pressTimers.current).forEach(timer => clearTimeout(timer));
     };
   }, [dispatch]);
 
-  const handleSongPress = (song) => {
+  const currentIndex = useMemo(
+    () => songs.findIndex(song => song.id === currentSong?.id),
+    [songs, currentSong]
+  );
+  
+
+  const handleSongPress = useCallback((song) => {
     dispatch(setCurrentSong(song));
     navigation.navigate('SongDetail', { song });
-  };
+  }, [dispatch, navigation]);
 
-  const handleSongLongPress = (song) => {
+  const handleSongLongPress = useCallback((song) => {
     setSelectionMode(true);
     setSelectedSongs(prev => [...prev, song.id]);
-  };
+  }, []);
 
-  const handleSongPressIn = (song) => {
+  const handleSongPressIn = useCallback((song) => {
     pressTimers.current[song.id] = setTimeout(() => {
       handleSongLongPress(song);
-    }, 1000); // 1 second delay
-  };
+    }, 1000);
+  }, [handleSongLongPress]);
 
-  const handleSongPressOut = (song) => {
+  const handleSongPressOut = useCallback((song) => {
     clearTimeout(pressTimers.current[song.id]);
-  };
-  const handlePlaySong = (song) => {
-  dispatch(playSongFromQueue({
-    queue: sortedSongs,
-    songId: song.id
-  }));
-  navigation.navigate('SongDetail', { song });
-};
+  }, []);
 
+  const handlePlaySong = useCallback((song) => {
+    dispatch(playSongFromQueue({ queue: sortedSongs, songId: song.id }));
+    navigation.navigate('SongDetail', { song });
+  }, [dispatch, sortedSongs, navigation]);
 
-  const currentIndex = songs.findIndex(song => song.id === currentSong?.id);
+  const toggleSelection = useCallback((id) => {
+    setSelectedSongs(prev =>
+      prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
+    );
+  }, []);
+
+  const renderItem = useCallback(({ item }) => {
+    const isSelected = selectedSongs.includes(item.id);
+    return (
+      <TouchableOpacity
+        onPress={() => selectionMode ? toggleSelection(item.id) : handleSongPress(item)}
+        onPressIn={() => handleSongPressIn(item)}
+        onPressOut={() => handleSongPressOut(item)}
+        delayLongPress={300}
+        style={[
+          styles.songRow,
+          { backgroundColor: isSelected ? '#e0e0e0' : theme.background }
+        ]}
+      >
+        {selectionMode && (
+          <Ionicons
+            name={isSelected ? 'checkbox' : 'square-outline'}
+            size={24}
+            color={theme.primary}
+            style={styles.checkboxIcon}
+          />
+        )}
+        <SongItem
+          song={item}
+          onPress={() => handlePlaySong(item)}
+          isCurrent={currentSong?.id === item.id}
+        />
+      </TouchableOpacity>
+    );
+  }, [selectionMode, selectedSongs, handleSongPress, handlePlaySong, handleSongPressIn, handleSongPressOut, theme, currentSong]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.topBar}>
         <Text style={[styles.title, { color: theme.text }]}>All Songs</Text>
-       
         <TouchableOpacity onPress={() => navigation.navigate('Search')}>
           <Ionicons name="search" size={24} color={theme.text} />
         </TouchableOpacity>
-        
         <TouchableOpacity onPress={() => setShowSortOptions(true)}>
           <MaterialIcons name="swap-vert-circle" size={24} color={theme.text} />
         </TouchableOpacity>
-
         <TouchableOpacity onPress={() => {
           if (selectionMode && selectedSongs.length > 0) {
             selectedSongs.forEach(id => dispatch(hideSong(id)));
@@ -101,15 +142,15 @@ const visibleSongs = useMemo(() =>
           }
           setSelectionMode(!selectionMode);
         }}>
-          <MaterialCommunityIcons 
-            name={selectionMode ? 'lock' : 'lock-open'} 
-            size={24} 
-            color={selectionMode ? theme.primary : theme.text} 
+          <MaterialCommunityIcons
+            name={selectionMode ? 'lock' : 'lock-open'}
+            size={24}
+            color={selectionMode ? theme.primary : theme.text}
           />
         </TouchableOpacity>
-
         <Text style={[styles.total, { color: theme.text }]}>
-          {currentIndex >= 0 ? `${currentIndex + 1} / ${songs.length}` : `0 / ${songs.length}`}
+          {currentIndex >= 0 ? `${currentIndex + 1} / ${visibleSongs.length}` : `0 / ${visibleSongs.length}`}
+
         </Text>
       </View>
 
@@ -138,48 +179,17 @@ const visibleSongs = useMemo(() =>
       </Modal>
 
       <FlatList
-        data={visibleSongs}
+        data={sortedSongs}
         keyExtractor={(item, index) => `${item.id}_${index}`}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => {
-              if (selectionMode) {
-                setSelectedSongs(prev =>
-                  prev.includes(item.id)
-                    ? prev.filter(id => id !== item.id)
-                    : [...prev, item.id]
-                );
-              } else {
-                handleSongPress(item);
-              }
-            }}
-            onPressIn={() => handleSongPressIn(item)}
-            onPressOut={() => handleSongPressOut(item)}
-            onLongPress={() => handleSongLongPress(item)}
-            delayLongPress={300}
-            style={{
-              backgroundColor: selectedSongs.includes(item.id) ? '#e0e0e0' : theme.background,
-              flexDirection: 'row',
-              alignItems: 'center',
-            }}
-          >
-            {selectionMode && (
-              <Ionicons
-                name={selectedSongs.includes(item.id) ? 'checkbox' : 'square-outline'}
-                size={24}
-                color={theme.primary}
-                style={{ marginRight: 8 }}
-              />
-            )}
-        <SongItem
-  song={item}
-  onPress={() => handlePlaySong(item)}
-  isCurrent={currentSong?.id === item.id}
-/>
-
-          </TouchableOpacity>
-        )}
+        renderItem={renderItem}
+        extraData={selectedSongs}
         contentContainerStyle={styles.listContent}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={21}
+        getItemLayout={(data, index) => (
+          { length: 70, offset: 70 * index, index }
+        )}
       />
 
       {currentSong && <MusicControls navigation={navigation} />}
@@ -209,6 +219,13 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 80,
+  },
+  songRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkboxIcon: {
+    marginRight: 8,
   },
   modalOverlay: {
     flex: 1,

@@ -1,12 +1,12 @@
-import { Audio } from 'expo-av';
-import { store } from '../store';
+import { Audio } from "expo-av";
+import { store } from "../store";
 import {
   setPlaybackPosition,
   setPlaybackDuration,
   setPlayState,
   setCurrentSong,
   nextSong,
-} from './audioSlice';
+} from "./audioSlice";
 
 class AudioService {
   constructor() {
@@ -19,7 +19,6 @@ class AudioService {
     if (!this.isInitialized) {
       this.soundObject = new Audio.Sound();
       this.isInitialized = true;
-
     }
     return this.soundObject;
   }
@@ -38,67 +37,59 @@ class AudioService {
     }
   };
 
- handleSongEnd = async () => {
-  const state = store.getState().audio;
-  const { repeatMode, currentQueueIndex, queue } = state;
+  handleSongEnd = async () => {
+    const state = store.getState().audio;
+    const { repeatMode, currentQueueIndex, queue } = state;
 
-  if (!this.soundObject) return;
+    if (!this.soundObject) return;
 
-  if (repeatMode === 'one') {
-    await this.soundObject.replayAsync();
-  } else if (repeatMode === 'all' || currentQueueIndex < queue.length - 1) {
-    store.dispatch(nextSong());
-    // Don't call loadAndPlay here!
-  } else {
-    store.dispatch(setPlayState(false));
-  }
-};
-
-async loadAndPlay(uri, shouldPlay = false) {
-  try {
- 
-
-    if (this.soundObject) {
-      await this.soundObject.stopAsync().catch(() => {});
-      await this.unloadSound();
+    if (repeatMode === "one") {
+      await this.soundObject.replayAsync();
+    } else if (repeatMode === "all" || currentQueueIndex < queue.length - 1) {
+      store.dispatch(nextSong());
+      // Don't call loadAndPlay here!
+    } else {
+      store.dispatch(setPlayState(false));
     }
+  };
 
-    await this.init(); // Re-initialize after unload
-    const status = await this.soundObject.loadAsync(
-      { uri },
-      { shouldPlay }
-    );
+  async loadAndPlay(uri, shouldPlay = false) {
+    try {
+      if (this.soundObject) {
+        await this.soundObject.stopAsync().catch(() => {});
+        await this.unloadSound();
+      }
 
-    this.soundObject.setOnPlaybackStatusUpdate(this.handlePlaybackStatus);
+      await this.init(); // Re-initialize after unload
+      const status = await this.soundObject.loadAsync({ uri }, { shouldPlay });
+
+      this.soundObject.setOnPlaybackStatusUpdate(this.handlePlaybackStatus);
+
+      if (status.durationMillis) {
+        store.dispatch(setPlaybackDuration(status.durationMillis));
+      }
+
+      store.dispatch(setPlayState(shouldPlay));
+      return true;
+    } catch (error) {
+      console.error("loadAndPlay failed:", error);
+      return false;
+    }
+  }
+
+  handlePlaybackStatus = (status) => {
+    if (!status.isLoaded) return;
+
+    store.dispatch(setPlaybackPosition(status.positionMillis));
 
     if (status.durationMillis) {
       store.dispatch(setPlaybackDuration(status.durationMillis));
     }
 
-    store.dispatch(setPlayState(shouldPlay));
-    return true;
-  } catch (error) {
-    console.error('loadAndPlay failed:', error);
-    return false;
-  }
-}
-
-
-handlePlaybackStatus = (status) => {
-  if (!status.isLoaded) return;
-
-  store.dispatch(setPlaybackPosition(status.positionMillis));
-
-  if (status.durationMillis) {
-    store.dispatch(setPlaybackDuration(status.durationMillis));
-  }
-
-  if (status.didJustFinish) {
-    this.handleSongEnd();
-  }
-};
-
-
+    if (status.didJustFinish) {
+      this.handleSongEnd();
+    }
+  };
 
   async seekTo(position) {
     try {
@@ -109,38 +100,25 @@ handlePlaybackStatus = (status) => {
       store.dispatch(setPlaybackPosition(position));
       return true;
     } catch (error) {
-      console.error('Seek operation failed:', error);
+      console.error("Seek operation failed:", error);
       return false;
     }
   }
 
   async togglePlayback() {
-
-
     try {
-      if (!this.soundObject)
-      
-        return;
-
-        
-
+      if (!this.soundObject) return;
 
       const { isPlaying } = store.getState().audio;
 
       if (isPlaying) {
-       
         await this.soundObject.pauseAsync();
         store.dispatch(setPlayState(false));
-
       } else {
         await this.soundObject.playAsync();
         store.dispatch(setPlayState(true));
-
-
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   async setRate(rate) {
@@ -157,15 +135,12 @@ handlePlaybackStatus = (status) => {
     if (this.soundObject) {
       try {
         await this.soundObject.unloadAsync();
-      } catch (error) {
-
-      }
+      } catch (error) {}
       this.soundObject = null;
       this.isInitialized = false;
     }
     this.clearSleepTimer();
   }
-  
 
   setSleepTimer(minutes) {
     this.clearSleepTimer();

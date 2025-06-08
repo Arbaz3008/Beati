@@ -78,10 +78,22 @@ const audioSlice = createSlice({
     setPlaybackRate: (state, action) => {
       state.playbackRate = action.payload;
     },
-    
     toggleShuffle: (state) => {
-      state.isShuffled = !state.isShuffled;
-    },
+  state.isShuffled = !state.isShuffled;
+  if (state.isShuffled) {
+    const current = state.queue[state.currentQueueIndex];
+    let rest = state.queue.filter((_, idx) => idx !== state.currentQueueIndex);
+    for (let i = rest.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rest[i], rest[j]] = [rest[j], rest[i]];
+    }
+    state.queue = [current, ...rest];
+    state.currentQueueIndex = 0;
+  } else {
+    state.queue = state.songs;
+    state.currentQueueIndex = state.queue.findIndex(song => song.id === state.currentSong.id);
+  }
+},
     setRepeatMode: (state, action) => {
       state.repeatMode = action.payload;
     },

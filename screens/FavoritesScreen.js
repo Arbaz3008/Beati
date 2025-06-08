@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { useSelector } from 'react-redux';
+import { useSelector , useDispatch} from 'react-redux';
 import { useTheme } from '../theme/ThemeContext'; 
 import SongItem from '../components/SongItem';
-
+import { setCurrentSong } from '../redux/audioSlice';
 const FavoritesScreen = ({ navigation }) => {
   const { theme } = useTheme();
+  const dispatch = useDispatch();
   const songs = useSelector(state => state.audio?.songs || []);
   const favorites = useSelector(state => state.audio?.favorites || []);
   const currentSong = useSelector(state => state.audio?.currentSong);
@@ -13,6 +14,10 @@ const uniqueFavorites = [...new Set(favorites)];
 const favoriteSongs = songs.filter(song => uniqueFavorites.includes(song.id));
 
 
+const handleSongPress = (item) => {
+  dispatch(setCurrentSong(item)); // Pehle currentSong set karo
+  navigation.navigate('SongDetail'); // Phir navigate karo (song prop ki zarurat nahi)
+};
 
   const renderEmptyComponent = () => (
     <View style={styles.emptyContainer}>
@@ -37,7 +42,8 @@ const favoriteSongs = songs.filter(song => uniqueFavorites.includes(song.id));
         renderItem={({ item }) => (
           <SongItem 
             song={item} 
-            onPress={() => navigation.navigate('SongDetail', { song: item })}
+           onPress={() => handleSongPress(item)}
+
             showOptions={false}
             isFavorite={true}
             isCurrent={currentSong?.id === item.id}

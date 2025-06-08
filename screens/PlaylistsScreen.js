@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   container: {
     marginTop:11,
     flex: 1,
-    backgroundColor: '#121212',
+    //backgroundColor: '#121212',
     padding: 16,
   },
   title: {
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#1a1a1a',
+    //backgroundColor: '#1a1a1a',
     borderRadius: 8,
     marginBottom: 16,
   },
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   input: {
-    backgroundColor: '#1a1a1a',
+    //backgroundColor: '#1a1a1a',
     color: '#fff',
     borderRadius: 8,
     padding: 12,
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cancelButton: {
-    backgroundColor: '#333',
+    //backgroundColor: '#333',
     borderRadius: 8,
     padding: 12,
     flex: 1,
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   createButton: {
-    backgroundColor: '#4cc9f0',
+    //backgroundColor: '#4cc9f0',
     borderRadius: 8,
     padding: 12,
     flex: 1,

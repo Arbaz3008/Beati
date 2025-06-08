@@ -9,11 +9,18 @@ const persistConfig = {
   storage: AsyncStorage,
   whitelist: ['favorites','playlists', 'hiddenSongs'] 
 };
+const playlistPersistConfig = {
+  key: 'playlists',
+  storage: AsyncStorage,
+};
+
 const persistedAudioReducer = persistReducer(persistConfig, audioReducer);
+const persistedPlaylistReducer = persistReducer(playlistPersistConfig, playlistReducer);
+
 export const store = configureStore({
   reducer: {
     audio: persistedAudioReducer,
-    playlists: playlistReducer,
+    playlists: persistedPlaylistReducer,
     theme: themeReducer,
   },
   middleware: (getDefaultMiddleware) =>
