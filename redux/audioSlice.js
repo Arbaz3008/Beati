@@ -59,12 +59,13 @@ const audioSlice = createSlice({
       }
     },
     pauseAudio: (state) => {
-      console.log('AUDIO PAUSED'); 
+
   state.isPlaying = false;
 },
     setSongs: (state, action) => {
       state.songs = action.payload;
     },
+    
     togglePlay: (state) => {
       state.isPlaying = !state.isPlaying;
     },
@@ -128,7 +129,7 @@ const audioSlice = createSlice({
     setPlayState: (state, action) => {
   state.isPlaying = action.payload;
 },
-    setSongs: (state, action) => { state.songs = action.payload; },
+    
     hideSong: (state, action) => {
       const song = state.songs.find(s => s.id === action.payload);
       if (song) {
@@ -189,7 +190,8 @@ export const {
   addTimerHistory,
   setAlarm,
   setPlayState,
-  hideSong, unhideSong,
+  hideSong, 
+  unhideSong,
   pauseAudio
 } = audioSlice.actions;
 

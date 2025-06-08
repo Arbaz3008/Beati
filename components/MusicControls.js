@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { togglePlay, nextSong, prevSong, toggleShuffle, setRepeatMode } from '../redux/audioSlice';
 import Slider from '@react-native-community/slider';
-
+import { addToPlaylist,incrementPlayCount } from '../redux/playlistSlice';
 import audioService from '../redux/audioService';
 import { useTheme } from '../theme/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
@@ -13,7 +13,29 @@ const MusicControls = () => {
   const navigation = useNavigation();
   const [songKey, setSongKey] = useState(0);
  
+const playCounts = useSelector(state => state.playlists.playCounts || {});
 
+
+useEffect(() => {
+  const loadAndTrackSong = async () => {
+    if (currentSong?.id && currentSong?.uri) {
+      try {
+        dispatch(addToPlaylist({ playlistId: 'Recently Played', songId: currentSong.id }));
+        dispatch(incrementPlayCount(currentSong.id));
+
+        if (playCounts[currentSong.id] >= 4) {
+          dispatch(addToPlaylist({ playlistId: 'MostPlayed', songId: currentSong.id }));
+        }
+
+        await audioService.loadAndPlay(currentSong.uri, isPlaying);
+      } catch (e) {
+        console.log('loadAndPlay error:', e.message);
+      }
+    }
+  };
+
+  loadAndTrackSong();
+}, [currentSong?.id, songKey]);
 
 
   const dispatch = useDispatch();
@@ -47,6 +69,7 @@ const MusicControls = () => {
   };
 const handlePlayPause = async () => {
   await audioService.togglePlayback();
+  
 };
 
   const handleNext = () => {
@@ -80,12 +103,7 @@ const handlePlayPause = async () => {
 
  
 
-  useEffect(() => {
-  if (currentSong?.uri) {
-    audioService.loadAndPlay(currentSong.uri, isPlaying).catch(e => {});
-  }
-  // eslint-disable-next-line
-}, [currentSong?.uri, songKey]);
+
 
 
    if (!currentSong) return null;
@@ -144,7 +162,6 @@ const handlePlayPause = async () => {
         <TouchableOpacity onPress={handleNext}>
           <MaterialCommunityIcons name="skip-forward" size={32} color={theme.icon} />
         </TouchableOpacity>
-        
         <TouchableOpacity onPress={handleRepeat}>
           <MaterialIcons 
             name={repeatMode === 'one' ? 'repeat-one' : 'repeat'} 
@@ -198,7 +215,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 16,
     right:0,
-    left:13
+    //left:13
   },
   playButton: {
     borderRadius: 50,

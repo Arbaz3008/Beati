@@ -66,6 +66,7 @@ function PlaylistsStack() {
     >
       <Stack.Screen name="PlaylistsMain" component={PlaylistsScreen} />
       <Stack.Screen name="Playlist" component={PlaylistScreen} />
+      <Stack.Screen name="SongDetail" component={SongDetailScreen} />
     </Stack.Navigator>
   );
 }
@@ -106,7 +107,7 @@ function SettingsStack() {
   );
 }
 
-// Tab Navigator
+
 function MainTabs() {
   const { theme } = useTheme();
 

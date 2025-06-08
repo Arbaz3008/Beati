@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef,useMemo } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { setCurrentSong } from '../redux/audioSlice';
@@ -18,7 +18,12 @@ const sortingOptions = [
 
 const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { queue: songs, currentSong } = useSelector(state => state.audio);
+  const { songs, hiddenSongs, currentSong } = useSelector(state => state.audio);
+const visibleSongs = useMemo(() => 
+  songs.filter(song => !hiddenSongs.some(h => h.id === song.id)),
+  [songs, hiddenSongs]
+);
+
   const { theme } = useTheme();
   const [showSortOptions, setShowSortOptions] = useState(false);
   const [sortType, setSortType] = useState('name_asc');
@@ -28,13 +33,15 @@ const HomeScreen = ({ navigation }) => {
   const pressTimers = useRef({});
 
   useEffect(() => {
-    let sorted = [...songs];
+    let sorted = [...visibleSongs];
     if (sortType === 'name_asc') sorted.sort((a, b) => a.title.localeCompare(b.title));
     if (sortType === 'name_desc') sorted.sort((a, b) => b.title.localeCompare(a.title));
     if (sortType === 'newest') sorted.sort((a, b) => b.id.localeCompare(a.id));
     if (sortType === 'oldest') sorted.sort((a, b) => a.id.localeCompare(b.id));
     setSortedSongs(sorted);
-  }, [songs, sortType]);
+  }, [visibleSongs, sortType]);
+  
+ 
 
   useEffect(() => {
     dispatch(loadAudioFilesFromDevice());
@@ -63,6 +70,14 @@ const HomeScreen = ({ navigation }) => {
   const handleSongPressOut = (song) => {
     clearTimeout(pressTimers.current[song.id]);
   };
+  const handlePlaySong = (song) => {
+  dispatch(playSongFromQueue({
+    queue: sortedSongs,
+    songId: song.id
+  }));
+  navigation.navigate('SongDetail', { song });
+};
+
 
   const currentIndex = songs.findIndex(song => song.id === currentSong?.id);
 
@@ -123,7 +138,7 @@ const HomeScreen = ({ navigation }) => {
       </Modal>
 
       <FlatList
-        data={sortedSongs}
+        data={visibleSongs}
         keyExtractor={(item, index) => `${item.id}_${index}`}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -156,15 +171,9 @@ const HomeScreen = ({ navigation }) => {
                 style={{ marginRight: 8 }}
               />
             )}
-         <SongItem
+        <SongItem
   song={item}
-  onPress={() => {
-    dispatch(playSongFromQueue({
-      queue: sortedSongs,
-      songId: item.id
-    }));
-    navigation.navigate('SongDetail', { song: item });
-  }}
+  onPress={() => handlePlaySong(item)}
   isCurrent={currentSong?.id === item.id}
 />
 

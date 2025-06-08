@@ -13,6 +13,7 @@ const initialState = {
       songs: [],
     },
   ],
+  playCounts: {},
 };
 
 const playlistSlice = createSlice({
@@ -29,13 +30,16 @@ const playlistSlice = createSlice({
     deletePlaylist: (state, action) => {
       state.playlists = state.playlists.filter(playlist => playlist.id !== action.payload);
     },
-    addToPlaylist: (state, action) => {
-      const { playlistId, songId } = action.payload;
-      const playlist = state.playlists.find(p => p.id === playlistId);
-      if (playlist && !playlist.songs.includes(songId)) {
-        playlist.songs.push(songId);
-      }
-    },
+   addToPlaylist: (state, action) => {
+  const { playlistId, songId } = action.payload;
+  const playlist = state.playlists.find(p => p.id === playlistId);
+  if (playlist && !playlist.songs.includes(songId)) {
+    playlist.songs.unshift(songId); // Naya song sabse aage
+    if (playlist.songs.length > 50) {
+      playlist.songs = playlist.songs.slice(0, 50); // Sirf 50 hi rahenge
+    }
+  }
+},
     removeFromPlaylist: (state, action) => {
       const { playlistId, songId } = action.payload;
       const playlist = state.playlists.find(p => p.id === playlistId);
@@ -44,14 +48,23 @@ const playlistSlice = createSlice({
       }
     },
     updateRecentlyPlayed: (state, action) => {
-      const recentPlaylist = state.playlists.find(p => p.id === 'recent');
+      const recentPlaylist = state.playlists.find(p => p.id === 'Recently Played');
       if (recentPlaylist) {
-        // Add to beginning and keep only last 50
-        recentPlaylist.songs = [action.payload, ...recentPlaylist.songs.slice(0, 49)];
+        recentPlaylist.songs = [action.payload, ...recentPlaylist.songs.filter(id => id !== action.payload)].slice(0, 50);
       }
     },
+     incrementPlayCount: (state, action) => {
+      const songId = action.payload;
+      if (state.playCounts[songId]) {
+        state.playCounts[songId] += 1;
+      } else {
+        state.playCounts[songId] = 1;
+      }
+    },
+
   },
 });
+
 
 export const {
   createPlaylist,
@@ -59,6 +72,7 @@ export const {
   addToPlaylist,
   removeFromPlaylist,
   updateRecentlyPlayed,
+  incrementPlayCount
 } = playlistSlice.actions;
 
 export default playlistSlice.reducer; 

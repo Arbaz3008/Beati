@@ -30,13 +30,13 @@ export const startVoiceControl = async () => {
   try {
     const available = await Speech.isAvailableAsync();
     if (!available) {
-      console.log('Speech recognition not available');
+
       return;
     }
     
     const { status } = await Speech.requestPermissionsAsync();
     if (status !== 'granted') {
-      console.log('Permission not granted');
+ 
       return;
     }
     

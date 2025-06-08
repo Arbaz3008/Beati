@@ -4,8 +4,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { useDispatch } from 'react-redux';
-import { setCurrentSong } from '../redux/audioSlice';
-const SongItem = ({ song, isCurrent,onPress }) => {
+import { playSongAsync } from '../redux/audioThunks';
+const SongItem = ({ song, isCurrent, }) => {
   const { theme } = useTheme();
   const dispatch = useDispatch();
 
@@ -15,11 +15,13 @@ const SongItem = ({ song, isCurrent,onPress }) => {
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
-  const handlePress = () => {
-    dispatch(setCurrentSong(song));
-    onPress(song);
-    
-  };
+const handlePress = () => {
+  // Agar already yeh song play ho raha hai, dobara play mat karo!
+  if (isCurrent) return;
+  dispatch(playSongAsync(song));
+};
+
+
 
 
   return (

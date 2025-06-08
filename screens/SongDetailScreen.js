@@ -10,6 +10,7 @@ import audioService from '../redux/audioService';
 import { Menu, MenuItem } from 'react-native-material-menu';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
+import { addToPlaylist ,incrementPlayCount} from '../redux/playlistSlice';
 
 const SongDetailScreen = ({ route, navigation }) => {
   const { song } = route.params;
@@ -19,6 +20,20 @@ const SongDetailScreen = ({ route, navigation }) => {
   const [remaining, setRemaining] = useState(sleepTimer ? sleepTimer * 60 : 0);
   const [visible, setVisible] = useState(false);
   const { theme } = useTheme();
+const playCounts = useSelector(state => state.playlists.playCounts || {});
+
+useEffect(() => {
+  if (currentSong?.id) {
+    dispatch(addToPlaylist({ playlistId: 'Recently Played', songId: currentSong.id }));
+    dispatch(incrementPlayCount(currentSong.id));
+    if (playCounts[currentSong.id] >= 4) {
+      dispatch(addToPlaylist({ playlistId: 'MostPlayed', songId: currentSong.id }));
+    }
+    audioService.loadAndPlay(currentSong.uri, isPlaying).catch(e => {});
+  }
+}, [currentSong?.id, song]);
+
+
 
     const handlePlayPause = async () => {
   await audioService.togglePlayback();
@@ -26,16 +41,18 @@ const SongDetailScreen = ({ route, navigation }) => {
 
   const handleNext = () => dispatch(nextSong());
   const handlePrev = () => dispatch(prevSong());
-  const handleFavorite = () => dispatch(toggleFavorite(song.id));
+  const handleFavorite = () => dispatch(toggleFavorite(displaySong.id));
   const handleSeek = async (value) => {
     await audioService.seekTo(value);
   };
 
-  const displaySong = currentSong || song;
+const displaySong = useSelector(state => state.audio.currentSong);
+
 
   const hideMenu = () => setVisible(false);
   const showMenu = () => setVisible(true);
 
+useEffect(() => {}, [currentSong, favorites]);
 
    useEffect(() => {
     if (remaining > 0) {
@@ -45,9 +62,10 @@ const SongDetailScreen = ({ route, navigation }) => {
       return () => clearInterval(interval);
     }
   }, [remaining]);
+  
 
   return (
-    <ScrollView 
+    <View 
       style={[styles.container, { backgroundColor: theme.background }]} 
       contentContainerStyle={styles.scrollContent}
     >
@@ -61,8 +79,8 @@ const SongDetailScreen = ({ route, navigation }) => {
       </View>
 
       <View style={styles.artworkContainer}>
-        {song.artwork ? (
-          <Image source={{ uri: song.artwork }} style={styles.artwork} />
+        {displaySong.artwork ? (
+          <Image source={{ uri: displaySong.artwork }} style={styles.artwork} />
         ) : (
           <View style={[styles.artworkPlaceholder, { backgroundColor: theme.card }]}>
             <Ionicons name="musical-notes" size={48} color={theme.primary} />
@@ -71,8 +89,8 @@ const SongDetailScreen = ({ route, navigation }) => {
       </View>
 
       <View style={styles.songInfo}>
-        <Text style={[styles.artist, { color: theme.text }]}>{song.artist || 'Unknown Artist'}</Text>
-        <Text style={[styles.album, { color: theme.subtext }]}>{song.album || 'Unknown Album'}</Text>
+        <Text style={[styles.artist, { color: theme.text }]}>{displaySong.artist || 'Unknown Artist'}</Text>
+        <Text style={[styles.album, { color: theme.subtext }]}>{displaySong.album || 'Unknown Album'}</Text>
       </View>
       <View style={{alignSelf:"flex-start", marginLeft: 20, marginTop: 10}}>
          {sleepTimer > 0 && (
@@ -114,7 +132,7 @@ const SongDetailScreen = ({ route, navigation }) => {
           <MenuItem 
             onPress={() => {
               hideMenu();
-              navigation.navigate('Playlists', { songId: song.id });
+              navigation.navigate('Playlists', { songId: displaySong.id });
             }}
             textStyle={{ color: theme.text }}
           >
@@ -141,7 +159,7 @@ SleepTimer
     hideMenu();
     // Song file ka URI lo, yahan example ke liye song.uri
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(song.uri);
+      await Sharing.shareAsync(displaySong.uri);
     } else {
       alert('Sharing not available on this device');
     }
@@ -171,13 +189,14 @@ SleepTimer
       </View>
 
       <View style={styles.controlsRow}>
-        <TouchableOpacity onPress={handleFavorite}>
-          <Ionicons 
-            name={favorites.includes(song.id) ? "heart" : "heart-outline"} 
-            size={32} 
-            color={favorites.includes(song.id) ? theme.primary : theme.icon} 
-          />
-        </TouchableOpacity>
+       <TouchableOpacity onPress={handleFavorite}>
+  <Ionicons 
+    name={favorites.includes(displaySong.id) ? "heart" : "heart-outline"} 
+    size={32} 
+    color={favorites.includes(displaySong.id) ? theme.primary : theme.icon} 
+  />
+</TouchableOpacity>
+
 
         <TouchableOpacity onPress={handlePrev}>
           <Ionicons name="play-skip-back" size={40} color={theme.icon} />
@@ -198,11 +217,11 @@ SleepTimer
           <Ionicons name="play-skip-forward" size={40} color={theme.icon} />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Playlists', { songId: song.id })}>
+        <TouchableOpacity onPress={() => navigation.navigate('Playlists', { songId: displaySong.id })}>
           <Ionicons name="add" size={32} color={theme.icon} />
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 

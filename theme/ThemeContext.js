@@ -93,7 +93,7 @@ export const ThemeProvider = ({ children }) => {
           setIsDark(savedTheme === 'dark' || (savedTheme === 'system' && systemTheme === 'dark'));
         }
       } catch (error) {
-        console.log('Error loading theme', error);
+   
       }
     };
     
@@ -114,7 +114,7 @@ export const ThemeProvider = ({ children }) => {
       setTheme(newTheme);
       setIsDark(newTheme === 'dark' || (newTheme === 'system' && systemTheme === 'dark'));
     } catch (error) {
-      console.log('Error saving theme', error);
+
     }
   };
 

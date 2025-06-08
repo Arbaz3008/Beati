@@ -5,7 +5,7 @@ export const getAudioFiles = async () => {
     const { status } = await MediaLibrary.requestPermissionsAsync();
     
     if (status !== 'granted') {
-      console.log('Media library permission not granted');
+ 
       return [];
     }
 
@@ -23,7 +23,7 @@ export const getAudioFiles = async () => {
       creationTime: asset.creationTime,
     }));
 
-    console.log('Total audio files found:', audioFiles.length);
+
     return audioFiles;
   } catch (error) {
     console.error('Error getting audio files:', error);

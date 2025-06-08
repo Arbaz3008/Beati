@@ -5,16 +5,18 @@ import { Ionicons } from '@expo/vector-icons';
 import SongItem from '../components/SongItem';
 
 const PlaylistScreen = ({ route, navigation }) => {
-  const { playlistId } = route.params;
+const { playlistId } = route.params;
   const playlists = useSelector(state => state.playlists?.playlists || []);
-
-  const { songs } = useSelector(state => state.audio);
-
-  const playlist = playlists.find(p => p.id === playlistId);
-const playlistSongs = (songs || []).filter(song => playlist?.songs?.includes(song.id));
+  const songs = useSelector(state => state.audio?.songs || []);
 
 
-  return (
+const playlist = playlists.find(p => p.id === playlistId);
+
+  const playlistSongs = songs.filter(song => playlist?.songs?.includes(song.id));
+const playCounts = useSelector(state => state.playlists.playCounts);
+
+
+return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -23,24 +25,26 @@ const playlistSongs = (songs || []).filter(song => playlist?.songs?.includes(son
         <Text style={styles.playlistName} numberOfLines={1}>{playlist?.name}</Text>
         <View style={{ width: 24 }} />
       </View>
-
       <Text style={styles.songCount}>{playlistSongs.length} songs</Text>
-
       <FlatList
         data={playlistSongs}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <SongItem 
-            song={item} 
-            onPress={() => navigation.navigate('SongDetail', { song: item })}
-            showOptions={false}
-          />
+        <SongItem 
+  song={item} 
+  playCount={playCounts?.[item.id] || 0}
+  onPress={() => navigation.navigate('SongDetail', { song: item })}
+  showOptions={false}
+/>
+
         )}
         contentContainerStyle={styles.listContent}
       />
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: {
